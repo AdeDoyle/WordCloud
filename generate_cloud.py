@@ -2,7 +2,7 @@
 import os
 from PIL import Image
 import numpy as np
-from wordcloud import WordCloud, STOPWORDS
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 from get_text import get_text, clean_text
 
 irish_stopwords = ['a', 'ach', 'acu', 'ag', 'agus', 'an', 'ar', 'as', 'atá', "b'", 'ba', 'bhí', 'bhfuil', 'chuig', "d'",
@@ -13,7 +13,7 @@ irish_stopwords = ['a', 'ach', 'acu', 'ag', 'agus', 'an', 'ar', 'as', 'atá', "b
 
 
 def generate_cloud(text_file, text_cleaning=None, stop_words=STOPWORDS,
-                   background=None, mask=None, dimensions=None):
+                   background=None, mask=None, maskcolour=False, dimensions=None):
     """Generates a word-cloud using text from a .docx file"""
 
     # Go to the word-document directory
@@ -56,6 +56,9 @@ def generate_cloud(text_file, text_cleaning=None, stop_words=STOPWORDS,
             mask=mask
         )
         wc.generate(text)
+        if maskcolour:
+            image_colors = ImageColorGenerator(mask)
+            wc.recolor(color_func=image_colors)
     else:
         raise RuntimeError("No shape selected for word cloud")
 
