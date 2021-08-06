@@ -1,5 +1,7 @@
 
 import os
+from PIL import Image
+import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 from get_text import get_text, clean_text
 
@@ -10,12 +12,22 @@ irish_stopwords = ['a', 'ach', 'acu', 'ag', 'agus', 'an', 'ar', 'as', 'atá', "b
                    'tá', 'thar', 'trí', 'tú', 'um']
 
 
-def generate_cloud(text_file, stop_words=STOPWORDS, text_cleaning=None):
+def generate_cloud(text_file, text_cleaning=None, stop_words=STOPWORDS,
+                   background=None, mask=None, dimensions=None):
     """Generates a word-cloud using text from a .docx file"""
 
     # Go to the word-document directory
+    # If directory doesn't exist, create it and raise error warning to place word-documents in this directory
+    # If the document doesn't exist in the directory, raise error warning to check file name
     main_dir = os.getcwd()
-    os.chdir("word_docs")
+    try:
+        os.chdir("word_docs")
+    except FileNotFoundError:
+        os.mkdir("word_docs")
+        raise RuntimeError('Could not find "word_docs" folder\n    Created folder, "word_docs"\n    '
+                           'Place .docx word file in "word_docs" folder')
+    if text_file not in [x.strip('.docx') for x in os.listdir()]:
+        raise RuntimeError(f'Could not find file, "{text_file}", in "word_docs" folder, check file extension is .docx')
 
     # Get the text from the .docx file and clean it
     text = get_text(text_file)
@@ -23,19 +35,38 @@ def generate_cloud(text_file, stop_words=STOPWORDS, text_cleaning=None):
         text = clean_text(text, text_cleaning)
 
     # Generate the word-cloud
-    wc = WordCloud(
-        mode="RGBA",
-        background_color=None,
-        stopwords=stop_words,
-        collocations=False,
-        height=100,
-        width=1500
-    )
-    wc.generate(text)
+    if dimensions and not mask:
+        height = dimensions[0]
+        width = dimensions[1]
+        wc = WordCloud(
+            mode="RGBA",
+            background_color=background,
+            stopwords=stop_words,
+            collocations=False,
+            height=height,
+            width=width
+        )
+        wc.generate(text)
+    elif len(mask) > 0:
+        wc = WordCloud(
+            mode="RGBA",
+            background_color=background,
+            stopwords=stop_words,
+            collocations=False,
+            mask=mask
+        )
+        wc.generate(text)
+    else:
+        raise RuntimeError("No shape selected for word cloud")
 
     # Move to the directory where the word-cloud will be saved
+    # If directory does not exist, create it
     os.chdir(main_dir)
-    os.chdir("word_clouds")
+    try:
+        os.chdir("word_clouds")
+    except FileNotFoundError:
+        os.mkdir("word_clouds")
+        os.chdir("word_clouds")
     save_dir = os.getcwd()
 
     # Save the word-cloud
@@ -52,7 +83,9 @@ if __name__ == "__main__":
     """Identify name of word file and appropriate stopwords"""
     filename = "An Ghaeilge"
     sw = irish_stopwords
+    msk = np.array(Image.open("word_cloud_templates\\eire2.jpg"))
 
     """generate the cloud"""
-    print(generate_cloud(filename, sw, "Gaeilge"))
+    print(generate_cloud(filename, "Gaeilge", sw, background="White", dimensions=[100, 1500]))
+    # print(generate_cloud(filename, "Gaeilge", sw, background="White", mask=msk))
 
